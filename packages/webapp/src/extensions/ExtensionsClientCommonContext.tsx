@@ -25,7 +25,6 @@ import ExtensionHostWorker from 'worker-loader!./extensionHost.worker'
 import { authenticatedUser } from '../auth'
 import { gql, queryGraphQL } from '../backend/graphql'
 import * as GQL from '../backend/graphqlschema'
-import { sendLSPHTTPRequests } from '../backend/lsp'
 import { Tooltip } from '../components/tooltip/Tooltip'
 import { editSettings } from '../configuration/backend'
 import { settingsCascade, toGQLKeyPath } from '../settings/configuration'
@@ -52,7 +51,9 @@ export function createExtensionsContextController(): ExtensionsContextController
                 `,
                 variables
             ) as Observable<QueryResult<Pick<ECCGQL.IQuery, 'extensionRegistry' | 'repository'>>>,
-        queryLSP: requests => sendLSPHTTPRequests(requests),
+        queryLSP: () => {
+            throw new Error('TODO(!sqs): not implemented')
+        },
         icons: {
             CaretDown: MenuDownIcon as React.ComponentType<{ className: string; onClick?: () => void }>,
             Menu: MenuIcon as React.ComponentType<{ className: string; onClick?: () => void }>,
