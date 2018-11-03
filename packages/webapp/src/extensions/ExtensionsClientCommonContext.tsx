@@ -122,9 +122,7 @@ export function updateHighestPrecedenceExtensionSettings(args: {
     )
 }
 
-export function createMessageTransports(
-    extension: Pick<ConfiguredExtension, 'id' | 'manifest'>
-): MessageTransports {
+export function createMessageTransports(extension: Pick<ConfiguredExtension, 'id' | 'manifest'>): MessageTransports {
     if (!extension.manifest) {
         throw new Error(`unable to run extension ${JSON.stringify(extension.id)}: no manifest found`)
     }
