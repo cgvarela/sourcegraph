@@ -100,7 +100,7 @@ require (
 	github.com/sourcegraph/go-jsonschema v0.0.0-20180805125535-0e659b54484d
 	github.com/sourcegraph/go-langserver v2.0.1-0.20181010102349-2d9d8f4a24da+incompatible
 	github.com/sourcegraph/go-lsp v0.0.0-20181009131510-4631ffd93a18
-	github.com/sourcegraph/go-vcsurl v0.0.0-20131114132947-6b12603ea6fd
+	github.com/sourcegraph/go-vcsurl v0.0.0-20181111002919-2305ecca26ab
 	github.com/sourcegraph/godockerize v0.0.0-20181102001209-f9c9d82c8d1c
 	github.com/sourcegraph/gosyntect v0.0.0-20180604231642-c01be3625b10
 	github.com/sourcegraph/httpcache v0.0.0-20160524185540-16db777d8ebe
