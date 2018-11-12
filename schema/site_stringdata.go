@@ -634,6 +634,18 @@ const SiteSchemaJSON = `{
           "description":
             "Defines whether repositories from this GitHub instance should be enabled and cloned when they are first seen by Sourcegraph. If false, the site admin must explicitly enable GitHub repositories (in the site admin area) to clone them and make them searchable on Sourcegraph. If true, they will be enabled and cloned immediately (subject to rate limiting by GitHub); site admins can still disable them explicitly, and they'll remain disabled.",
           "type": "boolean"
+        },
+        "authorization": { "$ref": "#/definitions/GitHubAuthorization" }
+      }
+    },
+    "GitHubAuthorization": {
+      "description": "If non-null, enforces GitHub repository permissions. This requires that there is an item in the ` + "`" + `auth.providers` + "`" + ` field of type \"github\" with the same ` + "`" + `url` + "`" + ` field as specified in this ` + "`" + `GitHubConnection` + "`" + `.",
+      "type": "object",
+      "properties": {
+        "ttl": {
+          "description": "The TTL of the repository permissions data cache.",
+          "type": "string",
+          "default": "3h"
         }
       }
     },
@@ -693,9 +705,12 @@ const SiteSchemaJSON = `{
             "Defines whether repositories from this GitLab instance should be enabled and cloned when they are first seen by Sourcegraph. If false, the site admin must explicitly enable GitLab repositories (in the site admin area) to clone them and make them searchable on Sourcegraph. If true, they will be enabled and cloned immediately (subject to rate limiting by GitLab); site admins can still disable them explicitly, and they'll remain disabled.",
           "type": "boolean"
         },
-        "authorization": {
+        "authorization": { "$ref": "#/definitions/GitLabAuthorization" }
+      }
+    },
+    "GitLabAuthorization": {
           "description":
-            "If non-null, enables GitLab permission checks. This requires that the value of ` + "`" + `token` + "`" + ` be an access token with \"sudo\" and \"api\" scopes.",
+            "If non-null, enforces GitLab repository permissions. This requires that the value of ` + "`" + `token` + "`" + ` be an access token with \"sudo\" and \"api\" scopes.",
           "type": "object",
           "additionalProperties": false,
           "required": ["authnProvider"],
@@ -728,8 +743,6 @@ const SiteSchemaJSON = `{
               "default": "3h"
             }
           }
-        }
-      }
     },
     "BitbucketServerConnection": {
       "type": "object",
