@@ -54,7 +54,7 @@ require (
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.1.4-0.20181015005113-68d1edeb366b
 	github.com/gorilla/websocket v1.4.0
-	github.com/graph-gophers/graphql-go v0.0.0-20180806175703-94da0f0031f9
+	github.com/graph-gophers/graphql-go v0.0.0-20181112032305-995849d5bff2
 	github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/hashicorp/golang-lru v0.5.0 // indirect
