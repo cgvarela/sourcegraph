@@ -11,6 +11,7 @@ All notable changes to Sourcegraph are documented in this file.
 
 - A new Explore area is linked from the top navigation bar (when the `localStorage.explore=true;location.reload()` feature flag is enabled).
 - Authentication via GitHub is now supported. To enable, add an item to the `auth.providers` list with `type: "github"`.
+- Configured repositories are periodically scheduled for updates using a new algorithm. You can disable the new algorithm with the following site configuration: `"experimentalFeatures": { "updateScheduler2": "disabled" }`. If you do so, please file a public issue to describe why you needed to disable it.
 
 ### Changed
 
