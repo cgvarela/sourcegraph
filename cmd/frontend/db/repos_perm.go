@@ -107,6 +107,7 @@ func getFilteredRepoNames(ctx context.Context, currentUser *types.User, repos ma
 				log15.Warn("Could not fetch authz provider account for user", "username", currentUser.Username, "authzProvider", authzProvider.ServiceID(), "error", err)
 			}
 		}
+		// log.Printf("# providerAcct: %+v", providerAcct)
 
 		// determine which repos "belong" to this authz provider
 		myUnverified, nextUnverified := authzProvider.Repos(ctx, unverified)

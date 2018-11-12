@@ -140,6 +140,8 @@ func (c *Client) cache(token string) *rcache.Cache {
 		c.repoCacheMu.RUnlock()
 		return cache
 	}
+	c.repoCacheMu.RUnlock()
+
 	c.repoCacheMu.Lock()
 	defer c.repoCacheMu.Unlock()
 	if cache, ok := c.repoCache[token]; ok {

@@ -316,9 +316,9 @@ func (c *Client) ListViewerRepositories(ctx context.Context, token string, page 
 	var restRepos []restRepository
 	var path string
 	if c.githubDotCom {
-		path = fmt.Sprintf("user/repos?sort=pushed&page=%d", page)
+		path = fmt.Sprintf("user/repos?sort=pushed&page=%d&per_page=100", page)
 	} else {
-		path = fmt.Sprintf("v3/user/repos?sort=pushed&page=%d", page)
+		path = fmt.Sprintf("v3/user/repos?sort=pushed&page=%d&per_page=100", page)
 	}
 	if err := c.requestGetWithToken(ctx, token, path, &restRepos); err != nil {
 		return nil, false, 1, err
