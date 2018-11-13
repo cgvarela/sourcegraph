@@ -47,6 +47,7 @@ type AuthProviders struct {
 	Saml          *SAMLAuthProvider
 	Openidconnect *OpenIDConnectAuthProvider
 	HttpHeader    *HTTPHeaderAuthProvider
+	Github        *GitHubAuthProvider
 }
 
 func (v AuthProviders) MarshalJSON() ([]byte, error) {
@@ -62,6 +63,9 @@ func (v AuthProviders) MarshalJSON() ([]byte, error) {
 	if v.HttpHeader != nil {
 		return json.Marshal(v.HttpHeader)
 	}
+	if v.Github != nil {
+		return json.Marshal(v.Github)
+	}
 	return nil, errors.New("tagged union type must have exactly 1 non-nil field value")
 }
 func (v *AuthProviders) UnmarshalJSON(data []byte) error {
@@ -74,6 +78,8 @@ func (v *AuthProviders) UnmarshalJSON(data []byte) error {
 	switch d.DiscriminantProperty {
 	case "builtin":
 		return json.Unmarshal(data, &v.Builtin)
+	case "github":
+		return json.Unmarshal(data, &v.Github)
 	case "http-header":
 		return json.Unmarshal(data, &v.HttpHeader)
 	case "openidconnect":
@@ -81,7 +87,7 @@ func (v *AuthProviders) UnmarshalJSON(data []byte) error {
 	case "saml":
 		return json.Unmarshal(data, &v.Saml)
 	}
-	return fmt.Errorf("tagged union type must have a %q property whose value is one of %s", "type", []string{"builtin", "saml", "openidconnect", "http-header"})
+	return fmt.Errorf("tagged union type must have a %q property whose value is one of %s", "type", []string{"builtin", "saml", "openidconnect", "http-header", "github"})
 }
 
 // AuthnProvider description: Identifies the authentication provider to use to identify users to GitLab.
@@ -129,10 +135,10 @@ type Contributions struct {
 
 // CoreSiteConfiguration description: Core configuration for a Sourcegraph site.
 type CoreSiteConfiguration struct {
-	AppURL                      string              `json:"appURL,omitempty"`
 	AuthProviders               []AuthProviders     `json:"auth.providers,omitempty"`
 	AuthPublic                  bool                `json:"auth.public,omitempty"`
 	AuthUserOrgMap              map[string][]string `json:"auth.userOrgMap,omitempty"`
+	ExternalURL                 string              `json:"externalURL,omitempty"`
 	HtmlBodyBottom              string              `json:"htmlBodyBottom,omitempty"`
 	HtmlBodyTop                 string              `json:"htmlBodyTop,omitempty"`
 	HtmlHeadBottom              string              `json:"htmlHeadBottom,omitempty"`
@@ -160,7 +166,9 @@ type Discussions struct {
 type ExperimentalFeatures struct {
 	CanonicalURLRedirect string `json:"canonicalURLRedirect,omitempty"`
 	Discussions          string `json:"discussions,omitempty"`
+	GithubAuth           bool   `json:"githubAuth,omitempty"`
 	JumpToDefOSSIndex    string `json:"jumpToDefOSSIndex,omitempty"`
+	UpdateScheduler2     string `json:"updateScheduler2,omitempty"`
 }
 
 // ExtensionRepository description: The location of the version control repository for this extension.
@@ -174,6 +182,15 @@ type Extensions struct {
 	AllowRemoteExtensions []string    `json:"allowRemoteExtensions,omitempty"`
 	Disabled              *bool       `json:"disabled,omitempty"`
 	RemoteRegistry        interface{} `json:"remoteRegistry,omitempty"`
+}
+
+// GitHubAuthProvider description: Configures the GitHub (or GitHub Enterprise) OAuth authentication provider for SSO. In addition to specifying this configuration object, you must also create a OAuth App on your GitHub instance: https://developer.github.com/apps/building-oauth-apps/creating-an-oauth-app/. When a user signs into Sourcegraph or links their GitHub account to their existing Sourcegraph account, GitHub will prompt the user for the repo scope.
+type GitHubAuthProvider struct {
+	ClientID     string `json:"clientID"`
+	ClientSecret string `json:"clientSecret"`
+	DisplayName  string `json:"displayName,omitempty"`
+	Type         string `json:"type"`
+	Url          string `json:"url,omitempty"`
 }
 type GitHubConnection struct {
 	Certificate                 string   `json:"certificate,omitempty"`
@@ -386,7 +403,6 @@ type SiteConfiguration struct {
 	ReposList                         []*Repository                `json:"repos.list,omitempty"`
 	ReviewBoard                       []*ReviewBoard               `json:"reviewBoard,omitempty"`
 	SearchIndexEnabled                *bool                        `json:"search.index.enabled,omitempty"`
-	SiteID                            string                       `json:"siteID,omitempty"`
 }
 
 // SlackNotificationsConfig description: Configuration for sending notifications to Slack.

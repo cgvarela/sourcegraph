@@ -20,7 +20,7 @@ import (
 
 func init() {
 	// Enable SourcegraphDotComMode
-	globals.AppURL = &url.URL{Scheme: "https", Host: "sourcegraph.com"}
+	globals.ExternalURL = &url.URL{Scheme: "https", Host: "sourcegraph.com"}
 
 	// Reinit router
 	initRouter()
@@ -101,6 +101,23 @@ func TestRouter(t *testing.T) {
 		{
 			path:      "/r@v/-/blob/d/f",
 			wantRoute: routeBlob,
+			wantVars:  map[string]string{"Repo": "r", "Rev": "@v", "Path": "/d/f"},
+		},
+
+		// raw
+		{
+			path:      "/r@v/-/raw",
+			wantRoute: routeRaw,
+			wantVars:  map[string]string{"Repo": "r", "Rev": "@v", "Path": ""},
+		},
+		{
+			path:      "/r@v/-/raw/f",
+			wantRoute: routeRaw,
+			wantVars:  map[string]string{"Repo": "r", "Rev": "@v", "Path": "/f"},
+		},
+		{
+			path:      "/r@v/-/raw/d/f",
+			wantRoute: routeRaw,
 			wantVars:  map[string]string{"Repo": "r", "Rev": "@v", "Path": "/d/f"},
 		},
 

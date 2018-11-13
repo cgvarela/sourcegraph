@@ -58,7 +58,6 @@ func ParseConfigEnvironment(data string) (*UnifiedConfiguration, error) {
 // Experimental features are special in that they are denoted individually
 // via e.g. "experimentalFeatures::myFeatureFlag".
 var requireRestart = []string{
-	"siteID",
 	"executeGradleOriginalRootPaths",
 	"auth.accessTokens",
 	"privateArtifactRepoURL",
@@ -80,7 +79,7 @@ var requireRestart = []string{
 	"core::lightstepProject",
 	"core::auth.userOrgMap",
 	"core::auth.providers",
-	"core::appURL",
+	"core::externalURL",
 	"core::tls.letsencrypt",
 	"core::tlsCert",
 	"core::tlsKey",

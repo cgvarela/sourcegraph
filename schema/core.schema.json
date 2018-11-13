@@ -37,26 +37,27 @@
         }
       }
     },
-    "appURL": {
-      "description": "Publicly accessible URL to web app (e.g., what you type into your browser).",
+    "externalURL": {
+      "description":
+        "The externally accessible URL for Sourcegraph (i.e., what you type into your browser). Previously called `appURL`.",
       "type": "string"
     },
     "tls.letsencrypt": {
       "description":
-        "Toggles ACME functionality for automatically using a TLS certificate issued by the Let's Encrypt Certificate Authority.\nThe default value is auto, which uses the following conditions to switch on:\n - tlsCert and tlsKey are unset.\n - appURL is a https:// URL\n - Can successfully bind to port 443",
+        "Toggles ACME functionality for automatically using a TLS certificate issued by the Let's Encrypt Certificate Authority.\nThe default value is auto, which uses the following conditions to switch on:\n - tlsCert and tlsKey are unset.\n - externalURL is a https:// URL\n - Can successfully bind to port 443",
       "default": "auto",
       "enum": ["auto", "on", "off"],
       "type": "string"
     },
     "tlsCert": {
       "description":
-        "The contents of the PEM-encoded TLS certificate for the web server (for the web app and API).\n\nSee https://docs.sourcegraph.com/docs/config/tls_ssl/ for more information.",
+        "The contents of the PEM-encoded TLS certificate for the web server (for the web app and API).\n\nSee https://docs.sourcegraph.com/admin/tls_ssl for more information.",
       "type": "string",
       "pattern": "^-----BEGIN CERTIFICATE-----\n"
     },
     "tlsKey": {
       "description":
-        "The contents of the PEM-encoded TLS key for the web server (for the web app and API).\n\nSee https://docs.sourcegraph.com/docs/config/tls_ssl/ for more information.",
+        "The contents of the PEM-encoded TLS key for the web server (for the web app and API).\n\nSee https://docs.sourcegraph.com/admin/tls_ssl for more information.",
       "type": "string",
       "pattern": "^-----BEGIN "
     },
@@ -114,14 +115,15 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": ["builtin", "saml", "openidconnect", "http-header"]
+            "enum": ["builtin", "saml", "openidconnect", "http-header", "github"]
           }
         },
         "oneOf": [
           { "$ref": "#/definitions/BuiltinAuthProvider" },
           { "$ref": "#/definitions/SAMLAuthProvider" },
           { "$ref": "#/definitions/OpenIDConnectAuthProvider" },
-          { "$ref": "#/definitions/HTTPHeaderAuthProvider" }
+          { "$ref": "#/definitions/HTTPHeaderAuthProvider" },
+          { "$ref": "#/definitions/GitHubAuthProvider" }
         ],
         "!go": {
           "taggedUnionType": true
@@ -226,7 +228,7 @@
         "displayName": { "$ref": "#/definitions/AuthProviderCommon/properties/displayName" },
         "serviceProviderIssuer": {
           "description":
-            "The name of this SAML Service Provider, which is used by the Identity Provider to identify this Service Provider. It defaults to https://sourcegraph.example.com/.auth/saml/metadata (where https://sourcegraph.example.com is replaced with this Sourcegraph instance's \"appURL\"). It is only necessary to explicitly set the issuer if you are using multiple SAML authentication providers.",
+            "The name of this SAML Service Provider, which is used by the Identity Provider to identify this Service Provider. It defaults to https://sourcegraph.example.com/.auth/saml/metadata (where https://sourcegraph.example.com is replaced with this Sourcegraph instance's \"externalURL\"). It is only necessary to explicitly set the issuer if you are using multiple SAML authentication providers.",
           "type": "string"
         },
         "identityProviderMetadataURL": {
@@ -302,6 +304,36 @@
             "The name (case-insensitive) of an HTTP header whose value is taken to be the username of the client requesting the page. Set this value when using an HTTP proxy that authenticates requests, and you don't want the extra configurability of the other authentication methods.",
           "type": "string"
         }
+      }
+    },
+    "GitHubAuthProvider": {
+      "description":
+        "Configures the GitHub (or GitHub Enterprise) OAuth authentication provider for SSO. In addition to specifying this configuration object, you must also create a OAuth App on your GitHub instance: https://developer.github.com/apps/building-oauth-apps/creating-an-oauth-app/. When a user signs into Sourcegraph or links their GitHub account to their existing Sourcegraph account, GitHub will prompt the user for the repo scope.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "clientID", "clientSecret"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "github"
+        },
+        "url": {
+          "type": "string",
+          "description":
+            "URL of the GitHub instance, such as https://github.com or https://github-enterprise.example.com.",
+          "default": "https://github.com/"
+        },
+        "clientID": {
+          "type": "string",
+          "description":
+            "The Client ID of the GitHub OAuth app, accessible from https://github.com/settings/developers (or the same path on GitHub Enterprise)."
+        },
+        "clientSecret": {
+          "type": "string",
+          "description":
+            "The Client Secret of the GitHub OAuth app, accessible from https://github.com/settings/developers (or the same path on GitHub Enterprise)."
+        },
+        "displayName": { "$ref": "#/definitions/AuthProviderCommon/properties/displayName" }
       }
     },
     "AuthProviderCommon": {

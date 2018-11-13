@@ -179,13 +179,13 @@ func TestMiddleware(t *testing.T) {
 			ExperimentalFeatures: &schema.ExperimentalFeatures{},
 		},
 		Core: schema.CoreSiteConfiguration{
-			AppURL: "http://example.com",
+			ExternalURL: "http://example.com",
 		},
 	})
 	defer conf.Mock(nil)
 
 	config := withConfigDefaults(&schema.SAMLAuthProvider{
-		Type:                        "saml",
+		Type: "saml",
 		IdentityProviderMetadataURL: idpServer.IDP.MetadataURL.String(),
 		ServiceProviderCertificate:  testSAMLSPCert,
 		ServiceProviderPrivateKey:   testSAMLSPKey,

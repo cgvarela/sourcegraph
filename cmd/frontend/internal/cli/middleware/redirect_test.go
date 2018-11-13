@@ -33,7 +33,7 @@ func TestCanonicalURL(t *testing.T) {
 	}
 
 	tests := []struct {
-		appURL               string
+		externalURL          string
 		httpToHttpsRedirect  string
 		canonicalURLRedirect string
 
@@ -43,101 +43,101 @@ func TestCanonicalURL(t *testing.T) {
 		wantRedirect string
 	}{
 		{
-			appURL:              "http://example.com",
+			externalURL:         "http://example.com",
 			httpToHttpsRedirect: "off",
 			url:                 "http://example.com/foo",
 			wantRedirect:        "",
 		},
 		{
-			appURL:              "https://example.com",
+			externalURL:         "https://example.com",
 			httpToHttpsRedirect: "off",
 			url:                 "http://example.com/foo",
 			wantRedirect:        "",
 		},
 		{
-			appURL:               "https://example.com",
+			externalURL:          "https://example.com",
 			httpToHttpsRedirect:  "off",
 			canonicalURLRedirect: "enabled",
 			url:                  "http://other.example.com/foo",
 			wantRedirect:         "https://example.com/foo",
 		},
 		{
-			appURL:               "http://example.com",
+			externalURL:          "http://example.com",
 			httpToHttpsRedirect:  "off",
 			canonicalURLRedirect: "enabled",
 			url:                  "https://other.example.com/foo",
 			wantRedirect:         "http://example.com/foo",
 		},
 		{
-			appURL:               "http://example.com",
+			externalURL:          "http://example.com",
 			httpToHttpsRedirect:  "off",
 			canonicalURLRedirect: "enabled",
 			url:                  "http://example.com",
 			wantRedirect:         "",
 		},
 		{
-			appURL:              "https://example.com",
+			externalURL:         "https://example.com",
 			httpToHttpsRedirect: "off",
 			url:                 "https://example.com/foo",
 			wantRedirect:        "",
 		},
 
 		{
-			appURL:              "https://example.com",
+			externalURL:         "https://example.com",
 			httpToHttpsRedirect: "on",
 			url:                 "http://example.com/foo",
 			wantRedirect:        "https://example.com/foo",
 		},
 		{
-			appURL:              "https://example.com",
+			externalURL:         "https://example.com",
 			httpToHttpsRedirect: "on",
 			url:                 "http://other.example.com/foo",
 			wantRedirect:        "https://example.com/foo",
 		},
 		{
-			appURL:              "https://example.com",
+			externalURL:         "https://example.com",
 			httpToHttpsRedirect: "on",
 			url:                 "http://example.com/foo",
 			xForwardedProto:     "https", // not trusted
 			wantRedirect:        "https://example.com/foo",
 		},
 		{
-			appURL:               "https://example.com",
+			externalURL:          "https://example.com",
 			httpToHttpsRedirect:  "on",
 			canonicalURLRedirect: "enabled",
 			url:                  "http://other.example.com/foo",
 			wantRedirect:         "https://example.com/foo",
 		},
 		{
-			appURL:              "https://example.com",
+			externalURL:         "https://example.com",
 			httpToHttpsRedirect: "on",
 			url:                 "https://example.com/foo",
 			wantRedirect:        "", // no infinite redirect loop
 		},
 
 		{
-			appURL:              "https://example.com",
+			externalURL:         "https://example.com",
 			httpToHttpsRedirect: "load-balanced",
 			url:                 "http://example.com/foo",
 			xForwardedProto:     "http",
 			wantRedirect:        "https://example.com/foo",
 		},
 		{
-			appURL:              "https://example.com",
+			externalURL:         "https://example.com",
 			httpToHttpsRedirect: "load-balanced",
 			url:                 "http://example.com/foo",
 			xForwardedProto:     "https",
 			wantRedirect:        "",
 		},
 		{
-			appURL:              "https://example.com",
+			externalURL:         "https://example.com",
 			httpToHttpsRedirect: "load-balanced",
 			url:                 "https://example.com/foo",
 			xForwardedProto:     "http",
 			wantRedirect:        "https://example.com/foo",
 		},
 		{
-			appURL:              "https://example.com",
+			externalURL:         "https://example.com",
 			httpToHttpsRedirect: "load-balanced",
 			url:                 "https://example.com/foo",
 			xForwardedProto:     "https",
@@ -145,7 +145,7 @@ func TestCanonicalURL(t *testing.T) {
 		},
 
 		{
-			appURL:               "https://example.com",
+			externalURL:          "https://example.com",
 			httpToHttpsRedirect:  "load-balanced",
 			canonicalURLRedirect: "enabled",
 			url:                  "http://example.com/foo",
@@ -153,7 +153,7 @@ func TestCanonicalURL(t *testing.T) {
 			wantRedirect:         "https://example.com/foo",
 		},
 		{
-			appURL:               "https://example.com",
+			externalURL:          "https://example.com",
 			httpToHttpsRedirect:  "load-balanced",
 			canonicalURLRedirect: "enabled",
 			url:                  "http://example.com/foo",
@@ -161,7 +161,7 @@ func TestCanonicalURL(t *testing.T) {
 			wantRedirect:         "",
 		},
 		{
-			appURL:               "https://example.com",
+			externalURL:          "https://example.com",
 			httpToHttpsRedirect:  "load-balanced",
 			canonicalURLRedirect: "enabled",
 			url:                  "http://other.example.com/foo",
@@ -169,7 +169,7 @@ func TestCanonicalURL(t *testing.T) {
 			wantRedirect:         "https://example.com/foo",
 		},
 		{
-			appURL:               "https://example.com",
+			externalURL:          "https://example.com",
 			httpToHttpsRedirect:  "load-balanced",
 			canonicalURLRedirect: "enabled",
 			url:                  "https://example.com/foo",
@@ -177,7 +177,7 @@ func TestCanonicalURL(t *testing.T) {
 			wantRedirect:         "https://example.com/foo",
 		},
 		{
-			appURL:               "https://example.com",
+			externalURL:          "https://example.com",
 			httpToHttpsRedirect:  "load-balanced",
 			canonicalURLRedirect: "enabled",
 			url:                  "https://example.com/foo",
@@ -187,7 +187,7 @@ func TestCanonicalURL(t *testing.T) {
 	}
 	for i, test := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			mock := &conf.UnifiedConfiguration{Core: schema.CoreSiteConfiguration{AppURL: test.appURL, HttpToHttpsRedirect: test.httpToHttpsRedirect}}
+			mock := &conf.UnifiedConfiguration{Core: schema.CoreSiteConfiguration{ExternalURL: test.externalURL, HttpToHttpsRedirect: test.httpToHttpsRedirect}}
 			if test.canonicalURLRedirect != "" {
 				mock.ExperimentalFeatures = &schema.ExperimentalFeatures{CanonicalURLRedirect: test.canonicalURLRedirect}
 			}
@@ -216,8 +216,8 @@ func TestCanonicalURL(t *testing.T) {
 		}
 	})
 
-	t.Run("appURL invalid value", func(t *testing.T) {
-		conf.Mock(&conf.UnifiedConfiguration{Core: schema.CoreSiteConfiguration{AppURL: "invalid"}})
+	t.Run("externalURL invalid value", func(t *testing.T) {
+		conf.Mock(&conf.UnifiedConfiguration{Core: schema.CoreSiteConfiguration{ExternalURL: "invalid"}})
 		defer conf.Mock(nil)
 		h := CanonicalURL(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 		req := httptest.NewRequest("GET", "/", nil)
@@ -226,7 +226,7 @@ func TestCanonicalURL(t *testing.T) {
 		if want := http.StatusInternalServerError; rr.Code != want {
 			t.Errorf("got response code %d, want %d", rr.Code, want)
 		}
-		if got, want := rr.Body.String(), "Misconfigured appURL"; !strings.Contains(got, want) {
+		if got, want := rr.Body.String(), "Misconfigured externalURL"; !strings.Contains(got, want) {
 			t.Errorf("got %q, want contains %q", got, want)
 		}
 	})
@@ -234,7 +234,7 @@ func TestCanonicalURL(t *testing.T) {
 	t.Run("experimentalFeatures.canonicalURLRedirect invalid value", func(t *testing.T) {
 		conf.Mock(&conf.UnifiedConfiguration{
 			SiteConfiguration: schema.SiteConfiguration{ExperimentalFeatures: &schema.ExperimentalFeatures{CanonicalURLRedirect: "invalid"}},
-			Core:              schema.CoreSiteConfiguration{AppURL: "http://example.com"},
+			Core:              schema.CoreSiteConfiguration{ExternalURL: "http://example.com"},
 		})
 		defer conf.Mock(nil)
 		h := CanonicalURL(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))

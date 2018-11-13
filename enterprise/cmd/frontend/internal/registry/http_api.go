@@ -63,7 +63,7 @@ func toRegistryAPIExtension(ctx context.Context, v *dbExtension) (*registry.Exte
 		return nil, err
 	}
 
-	baseURL := strings.TrimSuffix(conf.Get().Core.AppURL, "/")
+	baseURL := strings.TrimSuffix(conf.Get().Core.ExternalURL, "/")
 	return &registry.Extension{
 		UUID:        v.UUID,
 		ExtensionID: v.NonCanonicalExtensionID,

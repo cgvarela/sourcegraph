@@ -59,11 +59,11 @@ func init() {
 }
 
 func validateConfig(c conf.UnifiedConfiguration) (problems []string) {
-	var loggedNeedsAppURL bool
+	var loggedNeedsExternalURL bool
 	for _, p := range c.Core.AuthProviders {
-		if p.Openidconnect != nil && c.Core.AppURL == "" && !loggedNeedsAppURL {
-			problems = append(problems, `openidconnect auth provider requires appURL to be set to the external URL of your site (example: https://sourcegraph.example.com)`)
-			loggedNeedsAppURL = true
+		if p.Openidconnect != nil && c.Core.ExternalURL == "" && !loggedNeedsExternalURL {
+			problems = append(problems, `openidconnect auth provider requires externalURL to be set to the external URL of your site (example: https://sourcegraph.example.com)`)
+			loggedNeedsExternalURL = true
 		}
 	}
 

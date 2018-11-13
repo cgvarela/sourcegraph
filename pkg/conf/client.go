@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
 	"github.com/sourcegraph/sourcegraph/pkg/api"
 )
 
@@ -91,13 +90,15 @@ func (c *client) Mock(mockery *UnifiedConfiguration) {
 	c.store.Mock(mockery)
 }
 
-// Watch calls the given function in a separate goroutine whenever the
-// configuration has changed. The new configuration can be received by calling
-// conf.Get.
+// Watch calls the given function whenever the configuration has changed. The new configuration is
+// accessed by calling conf.Get.
 //
 // Before Watch returns, it will invoke f to use the current configuration.
 //
 // Watch is a wrapper around client.Watch.
+//
+// IMPORTANT: Watch will block on config initialization. It therefore should *never* be called
+// synchronously in `init` functions.
 func Watch(f func()) {
 	defaultClient.Watch(f)
 }
