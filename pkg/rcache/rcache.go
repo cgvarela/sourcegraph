@@ -43,12 +43,12 @@ func NewWithTTL(keyPrefix string, ttlSeconds int) *Cache {
 	}
 }
 
-func (r *Cache) GetMulti(keys ...string) ([][]byte, []bool) {
+func (r *Cache) GetMulti(keys ...string) [][]byte {
 	c := pool.Get()
 	defer c.Close()
 
 	if len(keys) == 0 {
-		return nil, nil
+		return nil
 	}
 	rkeys := make([]interface{}, len(keys))
 	for i, key := range keys {
@@ -69,7 +69,7 @@ func (r *Cache) GetMulti(keys ...string) ([][]byte, []bool) {
 		}
 		strVals[i] = b
 	}
-	return strVals, nil
+	return strVals
 }
 
 func (r *Cache) SetMulti(keyvals ...[2]string) {

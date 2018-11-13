@@ -24,6 +24,14 @@ type Provider struct {
 	cache    pcache
 }
 
+type pcache interface {
+	GetMulti(keys ...string) [][]byte
+	SetMulti(keyvals ...[2]string)
+	Get(key string) ([]byte, bool)
+	Set(key string, b []byte)
+	Delete(key string)
+}
+
 func NewProvider(githubURL *url.URL, baseToken string, cacheTTL time.Duration, mockCache pcache) *Provider {
 	// Copy-pasta'd from repo-updater/repos/github.go:
 
@@ -64,8 +72,8 @@ type cacheVal struct {
 }
 
 type publicRepoCacheVal struct {
-	ProjIDs  map[string]time.Duration
-	MaxCount int
+	Public bool
+	TTL    time.Duration
 }
 
 func githubRepoIDs(repos []*github.Repository) map[string]struct{} {
@@ -97,10 +105,9 @@ func (p *Provider) RepoPerms(ctx context.Context, userAccount *extsvc.ExternalAc
 		}
 	}
 
+	perms := make(map[api.RepoName]map[authz.Perm]bool) // permissions to return
 	// repos to which user doesn't have explicit access
 	nonExplicitRepos := map[authz.Repo]struct{}{}
-
-	perms := make(map[api.RepoName]map[authz.Perm]bool)
 	providerRepos, _ := p.Repos(ctx, repos)
 	for repo := range providerRepos {
 		if _, ok := explicitRepos[repo.ExternalRepoSpec.ID]; ok {
@@ -111,41 +118,105 @@ func (p *Provider) RepoPerms(ctx context.Context, userAccount *extsvc.ExternalAc
 	}
 
 	if len(nonExplicitRepos) > 0 {
-		publicRepos, err := p.getPublicRepos(ctx, nonExplicitRepos)
+		publicRepos, err := p.publicRepos(ctx, nonExplicitRepos)
 		if err != nil {
 			return nil, err
 		}
-		for repo := range publicRepos {
-			perms[repo.RepoName] = map[authz.Perm]bool{authz.Read: true}
+		for repo := range nonExplicitRepos {
+			if publicRepos[repo.ExternalRepoSpec.ID] {
+				perms[repo.RepoName] = map[authz.Perm]bool{authz.Read: true}
+			}
 		}
 	}
 
 	return perms, nil
 }
 
-func (p *Provider) getPublicRepos(ctx context.Context, repos map[authz.Repo]struct{}) (map[authz.Repo]struct{}, error) {
-	isPublic, err := p.fetchPublicOrPrivateRepos(ctx, repos)
+func (p *Provider) publicRepos(ctx context.Context, repos map[authz.Repo]struct{}) (map[string]bool, error) {
+	cachedIsPublic, err := p.getCachedPublicRepos(ctx, repos)
 	if err != nil {
 		return nil, err
 	}
+	if len(cachedIsPublic) >= len(repos) {
+		return cachedIsPublic, nil
+	}
 
-	publicRepos := make(map[authz.Repo]struct{})
-	for rp, public := range isPublic {
-		if public {
-			publicRepos[rp] = struct{}{}
+	missing := make(map[string]struct{})
+	for r := range repos {
+		if _, ok := cachedIsPublic[r.ExternalRepoSpec.ID]; !ok {
+			missing[r.ExternalRepoSpec.ID] = struct{}{}
 		}
 	}
-	return publicRepos, nil
+
+	missingIsPublic, err := p.fetchPublicRepos(ctx, missing)
+	if err != nil {
+		return nil, err
+	}
+	p.setCachedPublicRepos(ctx, missingIsPublic)
+
+	for k, v := range missingIsPublic {
+		cachedIsPublic[k] = v
+	}
+	return cachedIsPublic, nil
 }
 
-func (p *Provider) fetchPublicOrPrivateRepos(ctx context.Context, repos map[authz.Repo]struct{}) (map[authz.Repo]bool, error) {
-	isPublic := make(map[authz.Repo]bool)
-	for rp := range repos {
-		ghRepo, err := p.client.GetRepositoryByNodeID(ctx, rp.ExternalRepoSpec.ID)
+func (p *Provider) setCachedPublicRepos(ctx context.Context, isPublic map[string]bool) error {
+	setArgs := make([][2]string, 0, 2*len(isPublic))
+	for k, v := range isPublic {
+		key := fmt.Sprintf("r:%s", k)
+		val, err := json.Marshal(publicRepoCacheVal{
+			Public: v,
+			TTL:    p.cacheTTL,
+		})
+		if err != nil {
+			return err
+		}
+		setArgs = append(setArgs, [2]string{key, string(val)})
+	}
+	p.cache.SetMulti(setArgs...)
+	return nil
+}
+
+func (p *Provider) getCachedPublicRepos(ctx context.Context, repos map[authz.Repo]struct{}) (isPublic map[string]bool, err error) {
+	if len(repos) == 0 {
+		return nil, nil
+	}
+	isPublic = make(map[string]bool)
+	repoList := make([]string, 0, len(repos))
+	getArgs := make([]string, 0, len(repos))
+	for r := range repos {
+		getArgs = append(getArgs, fmt.Sprintf("r:%s", r))
+		repoList = append(repoList, r.ExternalRepoSpec.ID)
+	}
+	vals := p.cache.GetMulti(getArgs...)
+	if len(vals) != len(repos) {
+		return nil, fmt.Errorf("number of cache items did not match number of keys")
+	}
+
+	for i, v := range vals {
+		if v == nil {
+			continue
+		}
+		var val publicRepoCacheVal
+		if err := json.Unmarshal(v, &val); err != nil {
+			return nil, err
+		}
+		isPublic[repoList[i]] = val.Public
+	}
+
+	return isPublic, nil
+}
+
+// fetchPublicRepos returns a map where the keys are GitHub repository node IDs and the values are booleans
+// indicating whether a repository is public (true) or private (false).
+func (p *Provider) fetchPublicRepos(ctx context.Context, repos map[string]struct{}) (map[string]bool, error) {
+	isPublic := make(map[string]bool)
+	for ghRepoID := range repos {
+		ghRepo, err := p.client.GetRepositoryByNodeID(ctx, ghRepoID)
 		if err != nil {
 			return nil, err
 		}
-		isPublic[rp] = !ghRepo.IsPrivate
+		isPublic[ghRepoID] = !ghRepo.IsPrivate
 	}
 	return isPublic, nil
 }
@@ -197,14 +268,6 @@ func (p *Provider) fetchUserExplicitRepos(ctx context.Context, userAccount *exts
 	}
 
 	return repos, nil
-}
-
-func (p *Provider) fetchPublicRepos(ctx context.Context) {
-	// TODO: should have an external_repo column in the repo table (similar to how we have external
-	// user accounts). This holds the repo metadata (including whether the repo is public).
-	// Also need a external_repo_updated column.
-	//
-	// TODO: should cache at the codehost impl level or here?
 }
 
 // FetchAccount always returns nil, because the GitHub API doesn't currently provide a way to fetch user by external SSO account.
