@@ -29,7 +29,7 @@ func githubProvidersFromConfig(cfg *schema.SiteConfiguration) (
 		var ttl time.Duration
 		ttl, warnings = parseTTLOrDefault(g.Authorization.Ttl, 3*time.Hour, warnings)
 
-		authzProviders = append(authzProviders, permgh.NewProvider(ghURL, ttl, nil))
+		authzProviders = append(authzProviders, permgh.NewProvider(ghURL, g.Token, ttl, nil))
 	}
 	return authzProviders, seriousProblems, warnings
 }

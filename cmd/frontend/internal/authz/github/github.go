@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"net/url"
 	"time"
@@ -25,7 +24,7 @@ type Provider struct {
 	cache    pcache
 }
 
-func NewProvider(githubURL *url.URL, cacheTTL time.Duration, mockCache pcache) *Provider {
+func NewProvider(githubURL *url.URL, baseToken string, cacheTTL time.Duration, mockCache pcache) *Provider {
 	// Copy-pasta'd from repo-updater/repos/github.go:
 
 	// GitHub.com's API is hosted on api.github.com.
@@ -35,7 +34,7 @@ func NewProvider(githubURL *url.URL, cacheTTL time.Duration, mockCache pcache) *
 	// TODO: the extsvc.github.Client caches by token, but now we are going to use different tokens
 	//   with different requests on the same client, so we need to update its caching logic so that it
 	//   uses the proper token for its own cache entries
-	client := github.NewClient(apiURL, "", nil)
+	client := github.NewClient(apiURL, baseToken, nil)
 
 	p := &Provider{
 		codeHost: github.NewCodeHost(githubURL),
@@ -62,6 +61,11 @@ func (p *Provider) Repos(ctx context.Context, repos map[authz.Repo]struct{}) (mi
 type cacheVal struct {
 	ProjIDs map[string]struct{}
 	TTL     time.Duration
+}
+
+type publicRepoCacheVal struct {
+	ProjIDs  map[string]time.Duration
+	MaxCount int
 }
 
 func githubRepoIDs(repos []*github.Repository) map[string]struct{} {
@@ -93,16 +97,57 @@ func (p *Provider) RepoPerms(ctx context.Context, userAccount *extsvc.ExternalAc
 		}
 	}
 
-	// TODO: public repos
+	// repos to which user doesn't have explicit access
+	nonExplicitRepos := map[authz.Repo]struct{}{}
 
 	perms := make(map[api.RepoName]map[authz.Perm]bool)
 	providerRepos, _ := p.Repos(ctx, repos)
 	for repo := range providerRepos {
 		if _, ok := explicitRepos[repo.ExternalRepoSpec.ID]; ok {
 			perms[repo.RepoName] = map[authz.Perm]bool{authz.Read: true}
+		} else {
+			nonExplicitRepos[repo] = struct{}{}
 		}
 	}
+
+	if len(nonExplicitRepos) > 0 {
+		publicRepos, err := p.getPublicRepos(ctx, nonExplicitRepos)
+		if err != nil {
+			return nil, err
+		}
+		for repo := range publicRepos {
+			perms[repo.RepoName] = map[authz.Perm]bool{authz.Read: true}
+		}
+	}
+
 	return perms, nil
+}
+
+func (p *Provider) getPublicRepos(ctx context.Context, repos map[authz.Repo]struct{}) (map[authz.Repo]struct{}, error) {
+	isPublic, err := p.fetchPublicOrPrivateRepos(ctx, repos)
+	if err != nil {
+		return nil, err
+	}
+
+	publicRepos := make(map[authz.Repo]struct{})
+	for rp, public := range isPublic {
+		if public {
+			publicRepos[rp] = struct{}{}
+		}
+	}
+	return publicRepos, nil
+}
+
+func (p *Provider) fetchPublicOrPrivateRepos(ctx context.Context, repos map[authz.Repo]struct{}) (map[authz.Repo]bool, error) {
+	isPublic := make(map[authz.Repo]bool)
+	for rp := range repos {
+		ghRepo, err := p.client.GetRepositoryByNodeID(ctx, rp.ExternalRepoSpec.ID)
+		if err != nil {
+			return nil, err
+		}
+		isPublic[rp] = !ghRepo.IsPrivate
+	}
+	return isPublic, nil
 }
 
 func (p *Provider) setCachedExplicitRepos(ctx context.Context, userAccount *extsvc.ExternalAccount, ghRepoIDs map[string]struct{}) error {
@@ -132,7 +177,6 @@ func (p *Provider) getCachedExplicitRepos(ctx context.Context, userAccount *exts
 }
 
 func (p *Provider) fetchUserExplicitRepos(ctx context.Context, userAccount *extsvc.ExternalAccount) (repos []*github.Repository, err error) {
-	log.Printf("# userAccount: %+v", userAccount)
 	_, tok, err := github.GetExternalAccountData(&userAccount.ExternalAccountData)
 	if err != nil {
 		return nil, err
@@ -142,12 +186,10 @@ func (p *Provider) fetchUserExplicitRepos(ctx context.Context, userAccount *exts
 	}
 
 	for page := 1; ; page++ {
-		log.Printf("# %d", page)
 		r, hasNextPage, _, err := p.client.ListViewerRepositories(ctx, tok.AccessToken, page)
 		if err != nil {
 			return nil, err
 		}
-		log.Printf("# p %d: %+v", page, r)
 		repos = append(repos, r...)
 		if !hasNextPage {
 			break

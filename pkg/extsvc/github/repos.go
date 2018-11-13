@@ -263,7 +263,7 @@ func (c *Client) getPublicRepositories(ctx context.Context, sinceRepoID int64) (
 	var restRepos []restRepository
 	path := "v3/repositories"
 	if sinceRepoID > 0 {
-		path += "?since=" + strconv.FormatInt(sinceRepoID, 10)
+		path += "?per_page=100&since=" + strconv.FormatInt(sinceRepoID, 10)
 	}
 	if err := c.requestGet(ctx, path, &restRepos); err != nil {
 		return nil, err
