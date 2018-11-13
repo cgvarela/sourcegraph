@@ -66,6 +66,11 @@ func (p *Provider) Repos(ctx context.Context, repos map[authz.Repo]struct{}) (mi
 	return authz.GetCodeHostRepos(p.codeHost, repos)
 }
 
+type cacheKey struct {
+	User string
+	Repo string
+}
+
 type cacheVal struct {
 	ProjIDs map[string]struct{}
 	TTL     time.Duration
@@ -247,7 +252,13 @@ func (p *Provider) getCachedExplicitRepos(ctx context.Context, userAccount *exts
 	return c.ProjIDs, true, nil
 }
 
+func (p *Provider) fetchUserRepo(ctx context.Context, userAccount *extsvc.ExternalAccount, repo string) (canAccess bool, isPublic bool, err error) {
+	// NEXT
+}
+
 func (p *Provider) fetchUserExplicitRepos(ctx context.Context, userAccount *extsvc.ExternalAccount) (repos []*github.Repository, err error) {
+	// TODO: take repos as input...
+
 	_, tok, err := github.GetExternalAccountData(&userAccount.ExternalAccountData)
 	if err != nil {
 		return nil, err
